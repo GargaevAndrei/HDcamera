@@ -1,0 +1,329 @@
+unit UCamSelectDialog;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Imaging.pngimage,
+  Vcl.ExtCtrls, Vcl.ComCtrls, Vcl.Buttons, registry;
+
+type
+  TCamSelectForm = class(TForm)
+    cbCamMainName: TComboBox;
+    cbCamThermoName: TComboBox;
+    cbCamEndoName: TComboBox;
+    imOk: TImage;
+    Label1: TLabel;
+    Label2: TLabel;
+    Label3: TLabel;
+    cbCamMainPreviewVideoFmt: TComboBox;
+    Label4: TLabel;
+    cbCamThermoVideoFmt: TComboBox;
+    cbCamEndoVideoFmt: TComboBox;
+    Label5: TLabel;
+    Label6: TLabel;
+    imClose: TImage;
+    cbCamMainSaveVideoFmt: TComboBox;
+    Label7: TLabel;
+    Label8: TLabel;
+    Label9: TLabel;
+    CheckBox1: TCheckBox;
+    ProgressBar1: TProgressBar;
+    cbCamMainAndThermoFmt: TComboBox;
+    Label10: TLabel;
+    Label11: TLabel;
+    Label12: TLabel;
+    Label13: TLabel;
+    Label14: TLabel;
+    cbFlashSerialPort: TComboBox;
+    Label15: TLabel;
+    Label16: TLabel;
+    Label17: TLabel;
+    procedure imOkClick(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure cbCamMainNameChange(Sender: TObject);
+    procedure cbCamThermoNameChange(Sender: TObject);
+    procedure cbCamEndoNameChange(Sender: TObject);
+    procedure cbCamMainPreviewVideoFmtChange(Sender: TObject);
+    procedure cbCamMainSaveVideoFmtChange(Sender: TObject);
+    procedure cbCamThermoVideoFmtChange(Sender: TObject);
+    procedure cbCamEndoVideoFmtChange(Sender: TObject);
+    procedure FormActivate(Sender: TObject);
+    procedure imCloseClick(Sender: TObject);
+    procedure BitBtn1Click(Sender: TObject);
+    procedure BitBtn2Click(Sender: TObject);
+  private
+    procedure checkallcameras;
+    procedure EnumComPorts(const Ports: TStringList);
+    { Private declarations }
+  public
+    procedure AllComboBoxEnDis(state: Boolean);
+    { Public declarations }
+  end;
+
+var
+  CamSelectForm: TCamSelectForm;
+
+implementation
+uses sdimain;
+{$R *.dfm}
+
+procedure TCamSelectForm.BitBtn1Click(Sender: TObject);
+begin
+     cbFlashSerialPort.itemindex := cbFlashSerialPort.itemindex - 1;
+end;
+
+procedure TCamSelectForm.BitBtn2Click(Sender: TObject);
+begin
+     cbFlashSerialPort.itemindex := cbFlashSerialPort.itemindex + 1;
+
+end;
+
+procedure TCamSelectForm.cbCamEndoNameChange(Sender: TObject);
+var i : Integer;
+begin
+     cbCamEndoVideoFmt.Clear;
+     for i := 0 to length(sdimain.SDIAppForm.Ncamlist)-1 do begin
+       if (cbCamEndoName.ItemIndex=sdimain.SDIAppForm.Ncamlist[i].winnum) then begin
+          cbCamEndoVideoFmt.Items.Add(
+            inttostr(sdimain.SDIAppForm.Ncamlist[i].winwidth)+'x'+
+            inttostr(sdimain.SDIAppForm.Ncamlist[i].winheight)+' R:'+
+            FloattostrF(sdimain.SDIAppForm.Ncamlist[i].winwidth/sdimain.SDIAppForm.Ncamlist[i].winheight,ffGeneral,4,4)+' FMT:'+
+                    (sdimain.SDIAppForm.Ncamlist[i].wincamtype) );
+       end;
+     end;
+
+    checkallcameras;
+end;
+
+procedure TCamSelectForm.cbCamEndoVideoFmtChange(Sender: TObject);
+begin
+     checkallcameras;
+end;
+
+procedure TCamSelectForm.cbCamMainNameChange(Sender: TObject);
+var i : Integer;
+begin
+     cbCamMainPreviewVideoFmt.Clear;
+     cbCamMainSaveVideoFmt.Clear;
+     for i := 0 to length(sdimain.SDIAppForm.Ncamlist)-1 do begin
+       if (cbCamMainName.ItemIndex=sdimain.SDIAppForm.Ncamlist[i].winnum) then begin
+          cbCamMainPreviewVideoFmt.Items.Add(
+            inttostr(sdimain.SDIAppForm.Ncamlist[i].winwidth)+'x'+
+            inttostr(sdimain.SDIAppForm.Ncamlist[i].winheight)+' R:'+
+            FloattostrF(sdimain.SDIAppForm.Ncamlist[i].winwidth/sdimain.SDIAppForm.Ncamlist[i].winheight,ffGeneral,4,4)+' FMT:'+
+                    (sdimain.SDIAppForm.Ncamlist[i].wincamtype) );
+          cbCamMainSaveVideoFmt.Items.Add(
+            inttostr(sdimain.SDIAppForm.Ncamlist[i].winwidth)+'x'+
+            inttostr(sdimain.SDIAppForm.Ncamlist[i].winheight)+' R:'+
+            FloattostrF(sdimain.SDIAppForm.Ncamlist[i].winwidth/sdimain.SDIAppForm.Ncamlist[i].winheight,ffGeneral,4,4)+' FMT:'+
+                    (sdimain.SDIAppForm.Ncamlist[i].wincamtype) );
+          cbCamMainAndThermoFmt.Items.Add(
+            inttostr(sdimain.SDIAppForm.Ncamlist[i].winwidth)+'x'+
+            inttostr(sdimain.SDIAppForm.Ncamlist[i].winheight)+' R:'+
+            FloattostrF(sdimain.SDIAppForm.Ncamlist[i].winwidth/sdimain.SDIAppForm.Ncamlist[i].winheight,ffGeneral,4,4)+' FMT:'+
+                    (sdimain.SDIAppForm.Ncamlist[i].wincamtype) );
+       end;
+     end;
+
+     checkallcameras;
+
+end;
+
+procedure TCamSelectForm.cbCamMainPreviewVideoFmtChange(Sender: TObject);
+begin
+     checkallcameras;
+end;
+
+procedure TCamSelectForm.cbCamMainSaveVideoFmtChange(Sender: TObject);
+begin
+     checkallcameras;
+end;
+
+procedure TCamSelectForm.cbCamThermoNameChange(Sender: TObject);
+var i : Integer;
+begin
+     cbCamThermoVideoFmt.Clear;
+     for i := 0 to length(sdimain.SDIAppForm.Ncamlist)-1 do begin
+       if (cbCamThermoName.ItemIndex=sdimain.SDIAppForm.Ncamlist[i].winnum) then begin
+          cbCamThermoVideoFmt.Items.Add(
+            inttostr(sdimain.SDIAppForm.Ncamlist[i].winwidth)+'x'+
+            inttostr(sdimain.SDIAppForm.Ncamlist[i].winheight)+' R:'+
+            FloattostrF(sdimain.SDIAppForm.Ncamlist[i].winwidth/sdimain.SDIAppForm.Ncamlist[i].winheight,ffGeneral,4,4)+' FMT:'+
+                    (sdimain.SDIAppForm.Ncamlist[i].wincamtype) );
+       end;
+     end;
+     checkallcameras;
+end;
+
+procedure TCamSelectForm.cbCamThermoVideoFmtChange(Sender: TObject);
+begin
+     checkallcameras;
+end;
+
+procedure TCamSelectForm.FormActivate(Sender: TObject);
+var npnum,i,camnum,vfc : integer;
+camlist : TStringlist;
+var p:TStringlist;
+
+begin
+     if high(sdimain.SDIAppForm.Ncamlist)=-1 then begin
+       invalidate;
+       Application.processmessages;
+       progressbar1.visible := true;
+       SetLength(sdimain.SDIAppForm.Ncamlist,0);
+       camlist := TStringlist.Create;
+       camlist.Assign(sdimain.SDIAppForm.ImageEnView2.IO.DShowParams.VideoInputs);
+       progressbar1.Max := camlist.Count-1;
+       npnum := 0;
+       sdimain.SDIAppForm.ImageEnView2.Visible := false;
+       for camnum:=0 to camlist.Count-1 do begin
+         Application.processmessages;
+         progressbar1.Position := camnum;
+         sdimain.SDIAppForm.ImageEnView2.IO.DShowParams.SetVideoInput(camnum);
+         sdimain.SDIAppForm.ImageEnView2.IO.DShowParams.Connect;
+         for vfc:= 0 to sdimain.SDIAppForm.ImageEnView2.IO.DShowParams.VideoFormatsCount - 1 do begin
+           SetLength(sdimain.SDIAppForm.Ncamlist,high(sdimain.SDIAppForm.Ncamlist)+2);
+           sdimain.SDIAppForm.Ncamlist[high(sdimain.SDIAppForm.Ncamlist)].winnum     :=  camnum;
+           sdimain.SDIAppForm.Ncamlist[high(sdimain.SDIAppForm.Ncamlist)].winname    :=  camlist[camnum];
+           sdimain.SDIAppForm.Ncamlist[high(sdimain.SDIAppForm.Ncamlist)].vfcnum     :=  vfc;
+           sdimain.SDIAppForm.Ncamlist[high(sdimain.SDIAppForm.Ncamlist)].winwidth   :=  sdimain.SDIAppForm.ImageEnView2.IO.DShowParams.VideoFormats[vfc].MinWidth;
+           sdimain.SDIAppForm.Ncamlist[high(sdimain.SDIAppForm.Ncamlist)].winheight  :=  sdimain.SDIAppForm.ImageEnView2.IO.DShowParams.VideoFormats[vfc].MinHeight;
+           sdimain.SDIAppForm.Ncamlist[high(sdimain.SDIAppForm.Ncamlist)].wincamtype :=  sdimain.SDIAppForm.ImageEnView2.IO.DShowParams.VideoFormats[vfc].Format;
+           sdimain.SDIAppForm.Ncamlist[high(sdimain.SDIAppForm.Ncamlist)].napnum     :=  npnum;
+           npnum := npnum +1;
+         end;
+         sdimain.SDIAppForm.ImageEnView2.IO.DShowParams.Disconnect;
+       end;
+       camlist.Free;
+       progressbar1.visible := false;
+     end;
+
+     p := TStringlist.Create;
+     EnumComPorts(p);
+     cbFlashSerialPort.Items.Text := p.Text;
+     p.Free;
+
+     checkallcameras;
+     AllComboBoxEnDis(true);
+
+end;
+
+procedure TCamSelectForm.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+     Action := caFree;
+end;
+
+procedure TCamSelectForm.imCloseClick(Sender: TObject);
+begin
+     Close;
+end;
+
+procedure TCamSelectForm.imOkClick(Sender: TObject);
+var i : Integer;
+begin
+
+     for i := 0 to length(sdimain.SDIAppForm.Ncamlist)-1 do begin
+
+       if (cbCamMainName.ItemIndex=sdimain.SDIAppForm.Ncamlist[i].winnum) then begin
+        if (cbCamMainPreviewVideoFmt.ItemIndex=sdimain.SDIAppForm.Ncamlist[i].vfcnum) then begin
+           sdimain.SDIAppForm.ini.WriteString ('Main','MainPreviewName'        ,sdimain.SDIAppForm.Ncamlist[i].winname);
+           sdimain.SDIAppForm.ini.WriteString ('Main','MainPreviewCamType'     ,sdimain.SDIAppForm.Ncamlist[i].wincamtype);
+           sdimain.SDIAppForm.ini.WriteInteger('Main','MainPreviewWidth'       ,sdimain.SDIAppForm.Ncamlist[i].winwidth);
+           sdimain.SDIAppForm.ini.WriteInteger('Main','MainPreviewHeight'      ,sdimain.SDIAppForm.Ncamlist[i].winheight);
+           sdimain.SDIAppForm.ini.WriteBool('Main','MainPreviewAllowScaleUp'   ,CheckBox1.Checked);
+         end;
+       end;
+
+       if (cbCamMainName.ItemIndex=sdimain.SDIAppForm.Ncamlist[i].winnum) and
+       (cbCamMainSaveVideoFmt.ItemIndex=sdimain.SDIAppForm.Ncamlist[i].vfcnum) then begin
+         sdimain.SDIAppForm.ini.WriteString ('Main','MainSaveName'        ,sdimain.SDIAppForm.Ncamlist[i].winname);
+         sdimain.SDIAppForm.ini.WriteString ('Main','MainSaveCamType'     ,sdimain.SDIAppForm.Ncamlist[i].wincamtype);
+         sdimain.SDIAppForm.ini.WriteInteger('Main','MainSaveWidth'       ,sdimain.SDIAppForm.Ncamlist[i].winwidth);
+         sdimain.SDIAppForm.ini.WriteInteger('Main','MainSaveHeight'      ,sdimain.SDIAppForm.Ncamlist[i].winheight);
+       end;
+
+       if (cbCamMainName.ItemIndex=sdimain.SDIAppForm.Ncamlist[i].winnum) and
+       (cbCamMainAndThermoFmt.ItemIndex=sdimain.SDIAppForm.Ncamlist[i].vfcnum) then begin
+         sdimain.SDIAppForm.ini.WriteString ('Main','MainThermoName'        ,sdimain.SDIAppForm.Ncamlist[i].winname);
+         sdimain.SDIAppForm.ini.WriteString ('Main','MainThermoCamType'     ,sdimain.SDIAppForm.Ncamlist[i].wincamtype);
+         sdimain.SDIAppForm.ini.WriteInteger('Main','MainThermoWidth'       ,sdimain.SDIAppForm.Ncamlist[i].winwidth);
+         sdimain.SDIAppForm.ini.WriteInteger('Main','MainThermoHeight'      ,sdimain.SDIAppForm.Ncamlist[i].winheight);
+       end;
+
+       if (cbCamThermoName.ItemIndex=sdimain.SDIAppForm.Ncamlist[i].winnum) and
+       (cbCamThermoVideoFmt.ItemIndex=sdimain.SDIAppForm.Ncamlist[i].vfcnum) then begin
+         sdimain.SDIAppForm.ini.WriteString ('Main','ThermoSaveName'        ,sdimain.SDIAppForm.Ncamlist[i].winname);
+         sdimain.SDIAppForm.ini.WriteString ('Main','ThermoCamType'     ,sdimain.SDIAppForm.Ncamlist[i].wincamtype);
+         sdimain.SDIAppForm.ini.WriteInteger('Main','ThermoWidth'       ,sdimain.SDIAppForm.Ncamlist[i].winwidth);
+         sdimain.SDIAppForm.ini.WriteInteger('Main','ThermoHeight'      ,sdimain.SDIAppForm.Ncamlist[i].winheight);
+       end;
+
+       if (cbCamEndoName.ItemIndex=sdimain.SDIAppForm.Ncamlist[i].winnum) and
+       (cbCamEndoVideoFmt.ItemIndex=sdimain.SDIAppForm.Ncamlist[i].vfcnum) then begin
+         sdimain.SDIAppForm.ini.WriteString ('Main','EndoSaveName'        ,sdimain.SDIAppForm.Ncamlist[i].winname);
+         sdimain.SDIAppForm.ini.WriteString ('Main','EndoCamType'     ,sdimain.SDIAppForm.Ncamlist[i].wincamtype);
+         sdimain.SDIAppForm.ini.WriteInteger('Main','EndoWidth'       ,sdimain.SDIAppForm.Ncamlist[i].winwidth);
+         sdimain.SDIAppForm.ini.WriteInteger('Main','EndoHeight'      ,sdimain.SDIAppForm.Ncamlist[i].winheight);
+       end;
+
+     end;
+     sdimain.SDIAppForm.ini.WriteString ('Main','COMPORT' ,cbFlashSerialPort.items[cbFlashSerialPort.itemindex]);
+     Close;
+end;
+
+procedure TCamSelectForm.checkallcameras;
+var i,good : integer;
+begin
+      good := 0;
+      for i:=0 to self.ComponentCount-1 do begin
+        if (self.Components[i]) is TCombobox then begin
+          if TCombobox(self.Components[i]).ItemIndex<>-1 then good:=good+1;
+          good:=good-1;
+        end;
+      end;
+
+      imOk.visible := (good=0);
+end;
+
+procedure TCamSelectForm.AllComboBoxEnDis(state : Boolean);
+var i : integer;
+begin
+      for i:=0 to self.ComponentCount-1 do begin
+        if (self.Components[i]) is TCombobox then begin
+          TCombobox(self.Components[i]).Enabled := state;
+        end;
+      end;
+end;
+
+procedure  TCamSelectForm.EnumComPorts(const   Ports:  TStringList);
+var
+   nInd:  Integer;
+begin  { EnumComPorts }
+  with  TRegistry.Create(KEY_READ)  do
+    try
+      RootKey := HKEY_LOCAL_MACHINE;
+      if  OpenKey('hardware\devicemap\serialcomm', False)  then
+        try
+          Ports.BeginUpdate();
+          try
+            GetValueNames(Ports);
+            for  nInd := Ports.Count - 1  downto  0  do
+              Ports.Strings[nInd] := ReadString(Ports.Strings[nInd]);
+            Ports.Sort()
+          finally
+            Ports.EndUpdate()
+          end { try-finally }
+        finally
+          CloseKey()
+        end { try-finally }
+      else
+        Ports.Clear()
+    finally
+      Free()
+    end { try-finally }
+end; { EnumComPorts }
+
+
+
+end.

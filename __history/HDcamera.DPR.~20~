@@ -1,0 +1,16 @@
+program HDcameraNP3;
+
+uses
+  Forms,
+  SDIMAIN in 'SDIMAIN.pas' {SDIAppForm},
+  system.uitypes,
+  UCamSelectDialog in 'UCamSelectDialog.pas' {CamSelectForm};
+
+{$R *.RES}
+
+begin
+  Application.Initialize;
+  Application.CreateForm(TSDIAppForm, SDIAppForm);
+  Application.Run;
+end.
+

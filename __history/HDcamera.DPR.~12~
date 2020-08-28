@@ -1,0 +1,22 @@
+program HDcamera;
+
+
+
+{$R 'CameraNP2.res' 'CameraNP2.rc'}
+
+uses
+  Forms,
+  SDIMAIN in 'SDIMAIN.pas' {SDIAppForm},
+  system.uitypes;
+
+{$R *.RES}
+
+begin
+  Application.Initialize;
+  Application.CreateForm(TSDIAppForm, SDIAppForm);
+  SDIAppForm.Hide;
+  SDIAppForm.Color := 0;
+   SDIAppForm.Repaint;
+  Application.Run;
+end.
+ 

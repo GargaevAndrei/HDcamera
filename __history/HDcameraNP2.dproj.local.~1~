@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>1899.12.30 00:00:00.000.321,C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraNP2\New1.rc=C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraNP2\CameraNP2.rc</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.679,=C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraNP2\Win32\Debug\thermal48_48.png</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.841,C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraNP2\Win32\Debug\thermal48_48.png=C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraNP2\Win32\Debug\thermalpicture.png</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.217,=C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraNP2\New1.rc</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.543,C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraNP2\UCameraParameters.pas=</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.232,C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraNP2\UDrawPanel.pas=</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.055,C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraNP2\Win32\Debug\thermalpicture.png=</Transaction>
+    <Transaction>2019.05.14 17:54:56.427,C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraNP2\CameraNP2.rc=</Transaction>
+  </Transactions>
+</BorlandProject>

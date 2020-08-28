@@ -1,0 +1,1978 @@
+unit SDIMAIN;
+
+interface
+
+uses Winapi.Windows, System.Classes, Vcl.Graphics, Vcl.Forms, Vcl.Controls,
+  Vcl.Menus, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Buttons, Vcl.ExtCtrls, Vcl.ComCtrls,
+  Vcl.ImgList, Vcl.StdActns, Vcl.ActnList, Vcl.ToolWin,
+  System.ImageList, System.Actions, System.SysUtils, WinApi.Messages,
+  Vcl.Imaging.pngimage, CPDrv,ActiveX, ShlObj,  inifiles,vcl.imaging.jpeg ,
+  ieview,ieds, imageenio,hyieutils,imageenview,hyiedefs,system.Win.registry;
+const
+  APP_TERMINATE = -1;
+
+  CAM_MAIN_PRV    = 0;
+  CAM_THERMO      = 1;
+  CAM_ENDO        = 2;
+  CAM_TRANSPARENT = 3;
+  CAM_DOUBLE      = 4;
+  CAM_MAIN_SAVE   = 5;
+  CAM_MAIN_THERMO = 6;
+
+  PREVIEW_WIDTH   = 800;
+  PREVIEW_HEIGHT  = 540;
+
+  PREVIEW_TRANSMODE_WIDTH   = 665;
+  PREVIEW_TRANSMODE_HEIGHT  = 500;
+
+  THUMBNAILMAXWIDTH = 100;
+
+  FLASHPOWERSET : Array [0..7] of Integer = (0,301,420,530,688,887,1081,1209);
+
+type
+  TNaparnikCamera = record
+    winnum     : Integer;
+    winname    : ansiString;
+    winwidth   : Integer;
+    winheight  : Integer;
+    wincamtype : ansistring;
+    vfcnum     : integer;
+    napnum     : integer;
+    scale      : Boolean;
+  end;
+
+  TThermalRect = record
+    Left,Top,Width,Height,Combine,Alpha : Integer;
+  end;
+type
+  TSDIAppForm = class(TForm)
+    FlashControlComPort: TCommPortDriver;
+    FlashDelayTimer: TTimer;
+    FlashDelayProgressBar: TProgressBar;
+    imTakePhoto: TImage;
+    imFlash: TImage;
+    imNoFlash: TImage;
+    imClose: TImage;
+    imEndo: TImage;
+    imPhoto: TImage;
+    imThermal: TImage;
+    imThumbnail: TImage;
+    imPhotoTherm: TImage;
+    imDouble: TImage;
+    TransparentPositionTrackBar: TTrackBar;
+    Timer1: TTimer;
+    imFlashPlus: TImage;
+    imFlashMinus: TImage;
+    pbFlashPower: TProgressBar;
+    Label1: TLabel;
+    Memo1: TMemo;
+    Label2: TLabel;
+    GroupBox1: TGroupBox;
+    Memo2: TMemo;
+    ButtonNoteOk: TButton;
+    ButtonUpNotes: TButton;
+    ButtonDownNotes: TButton;
+    COMPortСonnect: TButton;
+    COMPort: TEdit;
+    ImageOrientation: TImage;
+    TimerEndo: TTimer;
+    CommPortDriver1: TCommPortDriver;
+    EditPressure: TEdit;
+    imNote: TImage;
+    iHorizont: TImage;
+    iVertical: TImage;
+    memoTextNote: TMemo;
+    iHorizontBorder: TImage;
+    iVerticalBorder: TImage;
+    ButtonClearNotes: TButton;
+    imPlusBritness: TImage;
+    imMinusBritness: TImage;
+    pbBritness: TProgressBar;
+    bZeroVector: TButton;
+    imSettings: TImage;
+    EditAlpha: TEdit;
+    TimerFindCom: TTimer;
+    ImageDot1: TImage;
+    procedure FormCreate(Sender: TObject);
+    procedure imTakePhotoClick(Sender: TObject);
+    procedure imCloseButtonClick(Sender: TObject);
+    procedure FlashDelayTimerTimer(Sender: TObject);
+    procedure imFlashOnOffClick(Sender: TObject);
+    procedure FormActivate(Sender: TObject);
+    procedure CameraSelectClick(Sender: TObject);
+    procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure TransparentPositionTrackBarChange(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure Timer1Timer(Sender: TObject);
+    procedure imFlashMinusClick(Sender: TObject);
+    procedure imFlashPlusClick(Sender: TObject);
+    procedure ButtonNoteOkClick(Sender: TObject);
+    procedure ButtonUpNotesClick(Sender: TObject);
+    procedure ButtonDownNotesClick(Sender: TObject);
+    procedure TimerEndoTimer(Sender: TObject);
+    procedure COMPortСonnectClick(Sender: TObject);
+    procedure CommPortDriver1ReceiveData(Sender: TObject; DataPtr: Pointer;
+      DataSize: Cardinal);
+    procedure imNoteClick(Sender: TObject);
+    procedure iHorizontClick(Sender: TObject);
+    procedure iVerticalClick(Sender: TObject);
+    procedure ButtonClearNotesClick(Sender: TObject);
+    procedure imPlusBritnessClick(Sender: TObject);
+    procedure imMinusBritnessClick(Sender: TObject);
+    procedure bZeroVectorClick(Sender: TObject);
+    procedure imSettingsClick(Sender: TObject);
+    procedure TimerFindComTimer(Sender: TObject);
+    procedure imThumbnailClick(Sender: TObject);
+    procedure Memo2KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure FlashControlComPortReceiveData(Sender: TObject; DataPtr: Pointer;
+      DataSize: Cardinal);
+
+
+
+  private
+    Flash   : Boolean;
+    curmode : Integer;
+    WaitFirstFrame : boolean;
+    Thermal : TThermalRect;
+    Ncam : Array [0..7] of  TNaparnikCamera;
+    imPhotoEn, imThermalEn, imEndoEn : Integer;
+    camlist : TStringlist;
+    StepFlashPower : Integer;
+    StepBritness : Integer;
+    FlashDuration  : Byte;
+
+    function  GetPathDocuments: String;
+    procedure SetupIconsVisibleAndPos;
+    procedure SavePhoto;
+    procedure CameraSelect(icurmode : Integer);
+    procedure NeedSetup;
+    procedure RefreshCamList;
+    procedure MainViewCreate;
+
+    procedure ImageEnView2DShowNewFrame(Sender: TObject);
+    procedure ImageEnViewMainDShowNewFrame(Sender: TObject);
+    procedure FlashSendCMD;
+    procedure BritnessSendCMD;
+
+    procedure DrawOrientation;
+    procedure DrawOrientation1;
+    procedure GetSerialPortsList;
+    procedure GetSerialPortsList1;
+    procedure FindSerialPort;
+    procedure AddNote;
+    procedure TakePhoto;
+
+    { Private declarations }
+  public
+    ini : Treginifile;
+    Ncamlist : Array of  TNaparnikCamera;
+    ImageEnViewMain :  TImageEnView;
+    ImageEnView2 :  TImageEnView;
+    bTakePhoto  : Boolean;
+
+    flagNote  : Boolean;
+    temp, j, indexCom, Com : Integer;
+    myTextLines1 : TStringList;
+    indexNote : Integer;
+    indexNoteShow : Integer;
+    fileNotes : TextFile;        //        File of TStringList
+    x, y, z : Single;
+    x_zero, y_zero, z_zero, pressure_zero : Single;
+    alpha_zero : Real;
+    xf, yf, zf, pressuref : Single;
+    pressure : Long;
+    tempFlag : Integer;
+    iLayer: integer;
+    Horizont : boolean;
+    Britness : integer;
+    numClickSettings: integer;
+    bCalibration, bOne, bOne1, bNotFindCom, bFindCom : Boolean;
+    SerialCommNum : TStringList;
+    tempChar: pansichar;
+    tempWideChar: PWideChar;
+    { Public declarations }
+  end;
+
+var
+  SDIAppForm: TSDIAppForm;
+implementation
+uses UCamSelectDialog;
+
+{$R *.dfm}
+
+function  TSDIAppForm.GetPathDocuments: String;
+// Replace CSIDL_HISTORY with the constants below
+var
+  Allocator: IMalloc;
+
+  SpecialDir: PItemIdList;
+  FBuf: array[0..MAX_PATH] of Char;
+begin
+  result := 'c:\';
+  if SHGetMalloc(Allocator) = NOERROR then
+  begin
+    SHGetSpecialFolderLocation(Handle, CSIDL_MYPICTURES, SpecialDir);
+    SHGetPathFromIDList(SpecialDir, @FBuf[0]);
+    Allocator.Free(SpecialDir);
+    result := string(FBuf)+'\Напарник\';
+  end;
+
+  if not directoryexists( result ) then begin
+       createdir( result );
+     end;
+
+end;
+
+procedure TSDIAppForm.iHorizontClick(Sender: TObject);
+begin
+  Horizont := True;
+
+  iHorizontBorder.Visible := True;
+  iVerticalBorder.Visible := False;
+
+end;
+
+procedure TSDIAppForm.iVerticalClick(Sender: TObject);
+begin
+  Horizont := False;
+
+  iHorizontBorder.Visible := False;
+  iVerticalBorder.Visible := True;
+
+end;
+
+function Bool2str( A : Boolean):String;
+begin
+     if A then Result := 'True' else Result := 'False';
+end;
+
+procedure TSDIAppForm.MainViewCreate;
+
+begin
+     if ImageEnViewMain<>nil then begin
+       ImageEnViewMain.Free;
+     end;
+
+     if ImageEnView2<>nil then begin
+       ImageEnView2.Free;
+     end;
+
+    ImageEnViewMain := TImageEnView.Create(self);
+    with ImageEnViewMain do begin
+      Parent := SDIAppForm;
+      Left := 569;
+      Top := 119;
+      autofit := True;
+      Width := 184;
+      Height := 207;
+      Background := clBlack;
+      Ctl3D := False;
+      ParentCtl3D := False;
+      BorderStyle := bsNone;
+      SelectionOptions := [];
+      OnDShowNewFrame := ImageEnViewMainDShowNewFrame;
+      EnableInteractionHints := False;
+      Visible := true;
+      TabOrder := 0;
+
+    end;
+
+    ImageEnView2 := TImageEnView.Create(self);
+    with ImageEnView2 do begin
+      Parent := SDIAppForm;
+      Left := 569;
+      Top := 119;
+      autofit := True;
+      Width := 184;
+      Height := 207;
+      Background := clBlack;
+      Ctl3D := False;
+      ParentCtl3D := False;
+      BorderStyle := bsNone;
+      SelectionOptions := [];
+      OnDShowNewFrame := ImageEnView2DShowNewFrame;
+      EnableInteractionHints := False;
+      Visible := true;
+      TabOrder := 0;
+    end;
+
+    camlist.Text := ImageEnViewMain.IO.DShowParams.VideoInputs.Text;
+
+    //------ correction -------------------------
+    if bOne1=False then begin
+       bOne1 := True;
+
+       // создаем stringlist и заполняем его из файла
+      myTextLines1 := TStringList.Create;
+      SerialCommNum := TStringList.Create;
+      Memo2.Text := '';
+      memoTextNote.Visible := True;
+      memoTextNote.BringToFront;
+      memoTextNote.Text := '';
+
+      if not directoryexists( 'C:\напарник' ) then begin
+         createdir( 'C:\напарник' );
+      end;
+
+      if Not FileExists('C:\напарник\заметки.txt') then begin
+           AssignFile(fileNotes, 'C:\напарник\заметки.txt');
+           Rewrite(fileNotes);
+           Writeln(fileNotes, #13);
+           CloseFile (fileNotes);
+      end;
+
+
+      AssignFile(fileNotes, 'C:\напарник\заметки.txt');
+      Reset(fileNotes);
+      myTextLines1.LoadFromFile('C:\напарник\заметки.txt');
+      CloseFile(fileNotes);
+
+      indexNoteShow := myTextLines1.Count-1;
+      myTextLines1[myTextLines1.Count-1-indexNoteShow] := '';
+
+       with iHorizontBorder.Canvas do
+       begin
+          Brush.Color := clBlack;
+          Pen.Color := clWhite;
+          Pen.Width := 3;
+          FillRect( Rect(1,1,iHorizontBorder.Width-1,iHorizontBorder.Height-1 ) );
+       end;
+
+       with iVerticalBorder.Canvas do
+       begin
+          Brush.Color := clBlack;
+          Pen.Color := clWhite;
+          Pen.Width := 3;
+          FillRect( Rect(1,1,iHorizontBorder.Width-1,iHorizontBorder.Height-1 ) );
+       end;
+
+    end;
+
+    //!!!!!!!!!!!!!!!!! Поиск порта !!!!!!!!!!!!!!!!!!!
+        //GetSerialPortsList();
+        GetSerialPortsList1();
+        FindSerialPort();
+
+end;
+
+procedure TSDIAppForm.Memo2KeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+        if (key=13) then begin
+
+           AddNote();
+
+        end;
+end;
+
+//==============================================================================
+procedure TSDIAppForm.GetSerialPortsList();
+var
+  Registry: TRegistry;
+  i: integer;
+  SerialCommValues: TStringList;
+begin
+
+  Memo1.Visible := True;
+  Memo1.BringToFront;
+
+  SerialCommValues := TStringList.Create;
+  Registry := TRegistry.Create;
+    try
+        Registry.RootKey := HKEY_LOCAL_MACHINE;
+        Registry.OpenKey('hardware\devicemap\serialcomm', false);
+        Registry.GetValueNames(SerialCommValues);
+        for i:=0 to SerialCommValues.Count-1 do begin
+              SerialCommNum.Add(Registry.ReadString(SerialCommValues.Strings[i]));
+              Memo1.Text :=  Memo1.Text + SerialCommNum[i];
+        end;
+    finally
+      Registry.CloseKey;
+      Registry.Free;
+      SerialCommValues.Free;
+  end;
+
+
+
+end;
+
+procedure TSDIAppForm.GetSerialPortsList1();
+var i: integer;
+    h: THandle;
+    //tempChar: pansichar;
+begin
+  //Memo1.Visible := True;
+  //Memo1.BringToFront;
+  bFindCom := False;
+
+  for i:=1 to 32 do
+  begin
+    if i<10 then tempChar:= pansichar('COM' + inttostr(i))
+    else
+      tempChar:= pansichar('\\.\' + 'COM' + inttostr(i));
+
+     tempWideChar :=  PWideChar(tempChar);
+
+    h:=CreateFile(tempWideChar, GENERIC_READ or GENERIC_WRITE, 0,
+      nil, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
+
+    if(h<>INVALID_HANDLE_VALUE)then begin
+      SerialCommNum.Add('COM'+IntToStr(i));
+      Memo1.Text :=  Memo1.Text + SerialCommNum[SerialCommNum.Count-1];
+    end;
+
+    CloseHandle(h);
+
+    end;
+end;
+
+procedure TSDIAppForm.FindSerialPort();
+begin
+      CommPortDriver1.PortName := '\\.\' + SerialCommNum[indexCom];
+      CommPortDriver1.Connect;
+
+      if CommPortDriver1.Connected then begin
+        bNotFindCom := True;
+        CommPortDriver1.SendString('CAAZ');
+      end;
+      TimerFindCom.Interval := 300;
+      TimerFindCom.Enabled := True;
+
+end;
+
+procedure TSDIAppForm.TimerFindComTimer(Sender: TObject);
+begin
+  CommPortDriver1.Disconnect;
+  TimerFindCom.Enabled := False;
+  if indexCom < SerialCommNum.Count-1 then begin
+      indexCom := indexCom + 1;
+      FindSerialPort();
+  end;
+end;
+
+procedure TSDIAppForm.DrawOrientation1;
+begin
+      with ImageOrientation.Canvas do
+            begin
+              FillRect( Rect(0,0,ImageOrientation.Width,ImageOrientation.Height) );
+              Brush.Color := clWhite;
+              Pen.Color := clBlack;
+              Pen.Style := psSolid;
+              Pen.Width := 1;
+
+              MoveTo(1, 1);
+              LineTo(ImageOrientation.Width-2, 1);
+              LineTo(ImageOrientation.Width-2, ImageOrientation.Height-2);
+              LineTo(1, ImageOrientation.Height-2);
+              LineTo(1, 1);
+              Pen.Style := psDash;
+              MoveTo(ImageOrientation.Width div 2, 1);
+              LineTo(ImageOrientation.Width div 2, ImageOrientation.Height-2);
+              MoveTo(1, ImageOrientation.Height div 2);
+              LineTo(ImageOrientation.Width-2, ImageOrientation.Height div 2);
+            end;
+end;
+
+procedure TSDIAppForm.DrawOrientation;
+var
+    x1, y1, z1 : Integer;
+    x2, y2, z2 : Single;
+    R : Integer;
+    R1 : Single;
+    R1xy, R1yz, R1xz: Single;
+    alpha, l_strelka, alpha_s : Real;
+
+    x1_s, x2_s, y1_s, y2_s : Integer;
+    x_k, y_k, z_k : Integer;
+
+
+
+begin
+
+    R := 40;
+    alpha_s := Pi/4;
+    l_strelka := 10;
+    //alpha_zero := -2.0196094001943;
+
+    if y_zero<>0 then begin
+          if y_zero<0 then  begin
+            alpha_zero := Pi/2 + ArcTan(z_zero/(-y_zero));
+          end;
+          if y_zero>0 then  begin
+            alpha_zero := -Pi/2 + ArcTan(z_zero/(-y_zero));
+          end;
+    end;
+
+
+    if (yf)<>0 then begin
+
+        if yf<0 then
+          alpha := ArcTan(zf/(-yf)) - alpha_zero;
+        if yf>0 then
+          alpha := ArcTan(zf/(-yf)) + Pi - alpha_zero;
+
+        y_k := round(R*0.7*cos(alpha));
+        z_k := round(R*0.7*sin(alpha));
+        if Horizont then  begin
+          x1_s := round(l_strelka*cos(alpha+alpha_s ));
+          x2_s := round(l_strelka*cos(alpha+alpha_s - Pi/2));
+          y1_s := round(l_strelka*sin(alpha+alpha_s));
+          y2_s := round(l_strelka*sin(alpha+alpha_s - Pi/2));
+        end
+        else begin
+          x1_s := round(l_strelka*cos(alpha+alpha_s + alpha_zero));
+          x2_s := round(l_strelka*cos(alpha+alpha_s + alpha_zero - Pi/2));
+          y1_s := round(l_strelka*sin(alpha+alpha_s + alpha_zero));
+          y2_s := round(l_strelka*sin(alpha+alpha_s + alpha_zero - Pi/2));
+        end;
+        //EditAlpha.Text := FloatToStr(alpha);
+
+    end;
+
+    if Not Horizont then begin
+
+
+
+
+        x1 := round((xf-x_zero)*10);
+        y1 := round((yf)*10);
+        z1 := round((zf)*10);
+        R := round(sqrt(y1*y1 + z1*z1));
+        EditPressure.Text := IntToStr(R);
+
+          DrawOrientation1;
+          with ImageOrientation.Canvas do
+          begin
+               Pen.Color := clRed;
+               Pen.Width := 3;
+               if x1<0 then
+               begin
+                  Pen.Color := clRed;
+                  MoveTo(ImageOrientation.Width div 2,            ImageOrientation.Height div 2);
+                  LineTo(ImageOrientation.Width div 2 - y1,       ImageOrientation.Height div 2 + z1);
+
+                  MoveTo(ImageOrientation.Width div 2 - y1,       ImageOrientation.Height div 2 + z1);
+                  LineTo(ImageOrientation.Width div 2 - y1-x1_s,  ImageOrientation.Height div 2 + z1-y1_s);
+                  MoveTo(ImageOrientation.Width div 2 - y1,       ImageOrientation.Height div 2 + z1);
+                  LineTo(ImageOrientation.Width div 2 - y1-x2_s,  ImageOrientation.Height div 2 + z1-y2_s);
+
+               end
+               else
+               begin
+                  Pen.Color := clBlue;
+                  MoveTo(ImageOrientation.Width div 2,            ImageOrientation.Height div 2);
+                  LineTo(ImageOrientation.Width div 2 + y1,       ImageOrientation.Height div 2 + z1);
+
+                  MoveTo(ImageOrientation.Width div 2 + y1,       ImageOrientation.Height div 2 + z1);
+                  LineTo(ImageOrientation.Width div 2 + y1+x1_s,  ImageOrientation.Height div 2 + z1-y1_s);
+                  MoveTo(ImageOrientation.Width div 2 + y1,       ImageOrientation.Height div 2 + z1);
+                  LineTo(ImageOrientation.Width div 2 + y1+x2_s,  ImageOrientation.Height div 2 + z1-y2_s);
+               end;
+
+
+        end;
+    end
+    else
+    begin
+
+        R1xz := Sqrt(zf*zf + xf*xf);
+        if R1xz <> 0 then
+        begin
+
+          x2 := R*((xf-x_zero)/R1xz);
+          x1 := round(x2*0.7);
+          z1 :=  round(R*0.7*cos(alpha+Pi/2));
+          y1 :=  round(R*0.7*sin(alpha+Pi/2));
+
+          DrawOrientation1;
+          with ImageOrientation.Canvas do
+          begin
+
+             Pen.Color := clRed;
+             Pen.Width := 3;
+             if x1<0 then
+             begin
+
+                MoveTo((ImageOrientation.Width div 2),          (ImageOrientation.Height div 2)+x1);
+                LineTo((ImageOrientation.Width div 2)-z1,       (ImageOrientation.Height div 2)+x1+y1);
+
+                MoveTo((ImageOrientation.Width div 2),          (ImageOrientation.Height div 2)+x1);
+                LineTo((ImageOrientation.Width div 2)+z1,       (ImageOrientation.Height div 2)+x1-y1);
+
+                // перпендикуляр
+                Pen.Color := clRed;
+                MoveTo((ImageOrientation.Width div 2),          (ImageOrientation.Height div 2)+x1);
+                LineTo((ImageOrientation.Width div 2)-y_k,      (ImageOrientation.Height div 2)+x1+z_k);
+                // стрелка
+                MoveTo((ImageOrientation.Width div 2)-y_k,      (ImageOrientation.Height div 2)+x1+z_k);
+                LineTo((ImageOrientation.Width div 2)-y_k+x1_s, (ImageOrientation.Height div 2)+x1+z_k-y1_s);
+                MoveTo((ImageOrientation.Width div 2)-y_k,      (ImageOrientation.Height div 2)+x1+z_k);
+                LineTo((ImageOrientation.Width div 2)-y_k+x2_s, (ImageOrientation.Height div 2)+x1+z_k-y2_s);
+
+
+             end
+             else
+             begin
+                MoveTo((ImageOrientation.Width div 2),         (ImageOrientation.Height div 2)+x1);
+                LineTo((ImageOrientation.Width div 2)-z1,      (ImageOrientation.Height div 2)+x1+y1);
+
+                MoveTo((ImageOrientation.Width div 2),         (ImageOrientation.Height div 2)+x1);
+                LineTo((ImageOrientation.Width div 2)+z1,      (ImageOrientation.Height div 2)+x1-y1);
+
+                // перпендикуляр
+                Pen.Color := clBlue;
+                MoveTo((ImageOrientation.Width div 2),          (ImageOrientation.Height div 2)+x1);
+                LineTo((ImageOrientation.Width div 2 - y_k),    (ImageOrientation.Height div 2)+x1+z_k);
+                // стрелка
+                MoveTo((ImageOrientation.Width div 2)-y_k,      (ImageOrientation.Height div 2)+x1+z_k);
+                LineTo((ImageOrientation.Width div 2)-y_k+x1_s, (ImageOrientation.Height div 2)+x1+z_k-y1_s);
+                MoveTo((ImageOrientation.Width div 2)-y_k,      (ImageOrientation.Height div 2)+x1+z_k);
+                LineTo((ImageOrientation.Width div 2)-y_k+x2_s, (ImageOrientation.Height div 2)+x1+z_k-y2_s);
+
+             end;
+
+          end;
+        end;
+    end;
+
+
+end;
+
+
+procedure TSDIAppForm.imNoteClick(Sender: TObject);
+begin
+
+      //Memo1.Visible := True;
+      //Memo1.BringToFront;
+
+      GroupBox1.Visible := True;
+      GroupBox1.BringToFront;
+
+end;
+
+procedure TSDIAppForm.imPlusBritnessClick(Sender: TObject);
+begin
+    pbBritness.Position := pbBritness.Position + StepBritness;
+    BritnessSendCMD;
+end;
+
+procedure TSDIAppForm.imSettingsClick(Sender: TObject);
+begin
+     if (curmode=CAM_TRANSPARENT) then begin
+          numClickSettings := numClickSettings + 1;
+          if numClickSettings=5 then  begin
+               bZeroVector.Visible := True;
+               COMPort.Visible := True;
+               COMPortСonnect.Visible := True;
+               numClickSettings := 0;
+          end else begin
+               bZeroVector.Visible := False;
+               COMPort.Visible := False;
+               COMPortСonnect.Visible := False;
+          end;
+
+     end
+
+end;
+
+procedure TSDIAppForm.ButtonNoteOkClick(Sender: TObject);
+begin
+         AddNote();
+end;
+
+procedure TSDIAppForm.AddNote();
+var
+  i : Integer;
+  resultCompare : Integer;
+  sum : Integer;
+begin
+         // проверка заметок на совпадение
+         for i := 0 to myTextLines1.Count-1 do
+         begin
+             resultCompare := AnsiCompareStr(myTextLines1[i], Memo2.Text);
+             if resultCompare = 0 then
+                sum := sum + 1;
+         end;
+
+         // добавление в список и запись в файл
+        if (Memo2.Text <> '') And (sum = 0) then
+        begin
+            indexNoteShow := 0;
+            myTextLines1.Add(Memo2.Text);
+            // сохранить в файл
+            AssignFile(fileNotes, 'C:\напарник\заметки.txt');
+            Rewrite(fileNotes);
+            for i := 0 to myTextLines1.Count-1 do
+              Writeln(fileNotes, myTextLines1[i]);
+            CloseFile(fileNotes);
+
+        end;
+        GroupBox1.Visible := False;
+
+        memoTextNote.Width := length(myTextLines1[myTextLines1.Count-1-indexNoteShow])*9;
+        if memoTextNote.Width>710 then
+             memoTextNote.Width :=710;
+        memoTextNote.Text := myTextLines1[myTextLines1.Count-1-indexNoteShow];
+        memoTextNote.BringToFront;
+
+end;
+
+procedure TSDIAppForm.ButtonUpNotesClick(Sender: TObject);
+begin
+         if indexNoteShow > 0 then
+         begin
+            indexNoteShow := indexNoteShow - 1;
+            Memo2.Text := myTextLines1[myTextLines1.Count-1-indexNoteShow];
+         end;
+end;
+
+
+procedure TSDIAppForm.bZeroVectorClick(Sender: TObject);
+begin
+
+  if CommPortDriver1.Connected then begin
+      CommPortDriver1.SendString('FAAZ');
+  end;
+
+end;
+
+procedure TSDIAppForm.BritnessSendCMD;
+var
+   byte1, byte2 : byte;
+   s:ansistring;
+begin
+
+     try
+        s:='AAAZ';
+       //tb := trunc(tbLEDLevel.Position*(60000/tbLEDLevel.Max));
+       s[2]:= ansichar((pbBritness.Position shr 8) and $FF);
+       s[3]:= ansichar(pbBritness.Position and $FF);
+       CommPortDriver1.SendString(s);
+     except
+       memo1.Lines.Add('except sending');
+     //  FlashControlComPort.Disconnect;
+     end;
+
+end;
+
+procedure TSDIAppForm.ButtonClearNotesClick(Sender: TObject);
+begin
+     indexNoteShow := myTextLines1.Count-1;
+     myTextLines1[myTextLines1.Count-1-indexNoteShow] := '';
+     memoTextNote.Width := length(myTextLines1[myTextLines1.Count-1-indexNoteShow])*9;
+     memoTextNote.Text := myTextLines1[myTextLines1.Count-1-indexNoteShow];
+     Memo2.Text := myTextLines1[myTextLines1.Count-1-indexNoteShow];
+end;
+
+procedure TSDIAppForm.ButtonDownNotesClick(Sender: TObject);
+begin
+         if (myTextLines1.Count > 0) And (myTextLines1.Count-(indexNoteShow+1) > 0) then
+         begin
+            indexNoteShow := indexNoteShow + 1;
+            Memo2.Text := myTextLines1[myTextLines1.Count-1-indexNoteShow];
+         end;
+end;
+
+procedure TSDIAppForm.COMPortСonnectClick(Sender: TObject);
+begin
+
+      //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      // автопоиск порта
+      CommPortDriver1.PortName := '\\.\COM'+COMPort.Text;
+      //CommPortDriver1.PortName := '\\.\'+SerialCommNum[indexCom];
+      //CommPortDriver1.PortName := '\\.\COM9';
+
+     CommPortDriver1.Connect;
+
+     if CommPortDriver1.Connected then begin
+       memo1.Lines.Add( 'Подключились к '+CommPortDriver1.PortName);
+
+     end else begin
+      memo1.Lines.Add('Не смогли подключиться к COM '+CommPortDriver1.PortName);
+     end;
+end;
+
+procedure TSDIAppForm.TimerEndoTimer(Sender: TObject);
+begin
+
+      if tempFlag = 0 then begin
+        j := j + 1;
+        CommPortDriver1.SendString('BAAZ');
+        DrawOrientation;
+        if j>30
+         then begin
+          j := 0;
+          tempFlag := 1;
+        end;
+      end
+      else
+      begin
+        tempFlag := 0;
+        CommPortDriver1.SendString('CAAZ');
+      end;
+
+
+end;
+
+procedure TSDIAppForm.FlashControlComPortReceiveData(Sender: TObject;
+  DataPtr: Pointer; DataSize: Cardinal);
+var s : ansistring;
+begin
+
+     s:= StringOfChar(' ', DataSize);
+     Move(DataPtr^, PChar(s)^, DataSize);
+
+      if length(s)=2 then begin
+
+        if( (s[2])='1') then begin
+            pbFlashPower.Position := pbFlashPower.Position + StepFlashPower;
+            memo1.Lines.Add('plus press');
+            FlashSendCMD;
+        end;
+
+        if( (s[2])='2') then begin
+            pbFlashPower.Position := pbFlashPower.Position - StepFlashPower;
+            memo1.Lines.Add('minus press');
+            FlashSendCMD;
+        end;
+
+        if( (s[2])='4') then begin
+            TakePhoto();
+        end;
+
+     end;
+
+end;
+
+
+
+procedure TSDIAppForm.CommPortDriver1ReceiveData(Sender: TObject;
+  DataPtr: Pointer; DataSize: Cardinal);
+var
+    s,shex : ansistring;
+    i : integer;
+    tempr : long;
+    k, k1 : single;
+
+function IntToBin(IValue : Int64; NumBits : word = 64) : string;
+var RetVar : string;
+    i,ILen : byte;
+begin
+     RetVar := '';
+     IValue := byte(IValue);
+
+     while IValue <> 0 do begin
+       Retvar := char(48 + (IValue and 1)) + RetVar;
+       IValue := IValue shr 1;
+     end;
+
+     if RetVar = '' then Retvar := '0';
+
+     while length(RetVar)<8 do RetVar:='0'+RetVar;
+
+     Result := RetVar;
+
+end;
+
+var Xaccel,Yaccel,Zaccel : smallint;
+                 xfl,yfl,zfl : single;
+begin
+     s:= StringOfChar(' ', DataSize);
+     Move(DataPtr^, PChar(s)^, DataSize);
+
+     // тип возвращаемыз данных опредлеяется по длине пакета
+     // 8 байт - акселерометр
+     // 6 байт - датчик давления
+     // 3 байта чтение по шине i2c
+
+     // данные с акселерометра
+     // datasheet https://www.nxp.com/docs/en/data-sheet/MMA8453Q.pdf
+     if length(s)=8 then begin
+       shex:='';
+
+       for i:=1 to 8 do shex:=shex+' '+IntToHex(byte(s[i]),2);
+       shex:=' '+trim(shex);
+
+       // собирает из 2 байт значение показаний акселерометра по каждой оси
+       Xaccel := (smallint((smallint(s[2]) shl 2) OR (smallint(s[3]) shr 6)) shl 6);
+       Yaccel := (smallint((smallint(s[4]) shl 2) OR (smallint(s[5]) shr 6)) shl 6);
+       Zaccel := (smallint((smallint(s[6]) shl 2) OR (smallint(s[7]) shr 6)) shl 6);
+
+       // 4096 отсчетов на 1g
+       Xfl:=Xaccel/4096;
+       Yfl:=Yaccel/4096;
+       Zfl:=Zaccel/4096;
+
+       x := Xfl;
+       y := Yfl;
+       z := Zfl;
+
+       //  калибровочные значения
+       if bCalibration=True then begin
+           bCalibration := False;
+           x_zero := x;
+           y_zero := y;
+           z_zero := z;
+           TimerEndo.Enabled := True;
+       end;
+
+       // фильтрация
+       k := 0.2;
+       xf := k*x + (1-k)*xf ;
+       yf := k*y + (1-k)*yf;
+       zf := k*z + (1-k)*zf;
+
+
+       // значение R рассчитывается для контроля состояния акселерометра
+       // при R=1 акселерометр в покое, также для контроля адекватности показаний
+       //shex := shex +' |  X:'+floattostrf(Xfl,ffFixed,4,1)+'g  Y:'+FloattostrF(Yfl,ffFixed,4,1)+'g  Z:'+FloattostrF(Zfl,ffFixed,4,1)
+       //  + 'g  R:'+floattostrf(sqrt(sqr((Xfl))+sqr((Yfl))+sqr((Zfl))),ffFixed,4,1)+'g';
+
+       shex := shex +' |  X:'+floattostrf(Xfl,ffFixed,4,1)+'g  Y:'+FloattostrF(Yfl,ffFixed,4,1)+'g  Z:'+FloattostrF(Zfl,ffFixed,4,1)
+         + 'g  R:'+floattostrf(sqrt(sqr((Xfl))+sqr((Yfl))+sqr((Zfl))),ffFixed,4,1)+'g';
+
+       //memo1.Lines.Add(shex);
+
+     end;
+
+     // разбор данный с датчика давления
+     // datаsheet на датчик давления
+     // https://www.st.com/resource/en/technical_note/dm00242308-how-to-interpret-pressure-and-temperature-readings-in-the-lps22hb-pressure-sensor-stmicroelectronics.pdf
+     if length(s)=6 then begin
+
+       // поиск порта
+       if bNotFindCom=True then begin
+           bNotFindCom := False;
+           bFindCom := True;
+
+           ImageDot1.Visible := True;
+           ImageDot1.BringToFront;
+
+           TimerFindCom.Enabled := False;
+           Com := indexCom;
+           CommPortDriver1.Disconnect;
+           Memo1.Text :=  Memo1.Text + '  find com port =' + SerialCommNum[Com];
+       end;
+
+       shex:='';
+
+       for i:=1 to 6 do shex:=shex+' '+IntToHex(byte(s[i]),2);
+
+       pressure := (long(s[3]) shl 16) or (long(s[2]) shl 8) or long(s[1]);
+       tempr    := (long(s[5]) shl 8) or long(s[4]);
+
+       shex:=' '+trim(shex)+'       |  Pressure='+ floattostrf(pressure/4096,fffixed,4,1)+'гПа   Temp='+ floattostrf(tempr/100,fffixed,2,1)+'°C';
+       //memo1.Lines.Add(shex);
+
+       // фильтрация
+       k1 := 0.3;
+       pressuref := k1*pressure + (1-k1)*pressuref;
+
+       //EditPressure.Text := IntToStr(pressure);
+       //EditPressure.Text := FloatToStr(round(pressuref - pressure_zero));
+     end;
+
+     // разбор данных по команде чтения с шины i2c
+     if length(s)=3 then begin
+       shex:=' 0x'+IntToHex(byte(s[i]),2)+'  '+InttobiN(byte(s[i]),8)+'b';
+       //shex:=' i2c:'+edit1.text+'    reg:'+edit2.text+'        |  '+trim(shex);
+       // memo1.Lines.Add(shex);
+     end;
+
+
+end;
+
+
+procedure TSDIAppForm.makeFoto();
+var
+   FlashToPort : Word;
+   FlashBytes : Array [0..1] of byte absolute FlashToPort;
+begin
+     case curmode of
+       CAM_MAIN_PRV : begin
+             Timer1.Enabled := false;
+             ImageEnViewMain.IO.DShowParams.stop;
+             ImageEnViewMain.IO.DShowParams.Disconnect;
+
+             ImageEnViewMain.IO.DShowParams.SetVideoInput(Ncam[CAM_MAIN_SAVE].winnum , 0,
+                 Ncam[CAM_MAIN_SAVE].winwidth , Ncam[CAM_MAIN_SAVE].winheight , Ncam[CAM_MAIN_SAVE].wincamtype );
+
+             ImageEnViewMain.IO.DShowParams.connect;
+             ImageEnViewMain.IO.DShowParams.run;
+
+             if flash then begin
+
+              FlashSendCMD;
+
+               FlashDelayTimer.enabled := True;
+
+               FlashDelayProgressBar.Position := 0;
+               FlashDelayProgressBar.Max := 10;
+               FlashDelayProgressBar.Left := (clientWidth-600) div 2;
+               FlashDelayProgressBar.Width := 600;
+               FlashDelayProgressBar.top := ClientHeight - 25;
+               FlashDelayProgressBar.Visible := True;
+            end else begin
+              //bTakePhoto := true;
+
+              try
+                 if FlashControlComPort.Connect then begin
+                   memo1.Lines.Add('connect');
+                   memo1.Lines.Add('send start -');
+                   FlashControlComPort.SendByte($55);
+                   FlashControlComPort.SendByte($53);
+                   FlashControlComPort.SendByte(4);
+                   FlashControlComPort.SendByte(175);
+                   FlashControlComPort.SendByte(FlashDuration);
+                 end else begin
+                   memo1.Lines.Add(FlashControlComPort.PortName+'cannot conn.');
+                 end;
+               except
+                 memo1.Lines.Add('except sending');
+               //  FlashControlComPort.Disconnect;
+               end;
+
+               FlashDelayTimer.enabled := True;
+
+               FlashDelayProgressBar.Position := 0;
+               FlashDelayProgressBar.Max := 10;
+               FlashDelayProgressBar.Left := (clientWidth-600) div 2;
+               FlashDelayProgressBar.Width := 600;
+               FlashDelayProgressBar.top := ClientHeight - 25;
+               FlashDelayProgressBar.Visible := True;
+
+            end;
+       end;
+       else begin
+          Timer1.Enabled := false;
+          bTakePhoto := true;
+
+
+       end;
+     end;
+
+end;
+//=============================================================================
+
+procedure TSDIAppForm.CameraSelect(icurmode : Integer);
+
+begin
+     curmode := icurmode;
+     TransparentPositionTrackBar.Visible := False;
+
+     RefreshCamList;
+
+
+     if Pos(Ncam[CAM_ENDO].winname,camlist.text)=0 then begin
+       imEndoEn := 0;
+     end;
+
+
+     case curmode of
+        CAM_MAIN_PRV :
+        begin
+               ImageEnView2.IO.DShowParams.Stop;
+               ImageEnView2.Visible := false;
+
+               ImageEnViewMain.Layers[0].useresamplefilter := false;
+               if ImageEnViewMain.LayersCount=2 then ImageEnViewMain.Layers[1].Visible := False;
+
+               if Ncam[CAM_MAIN_PRV].scale then begin
+
+               if (Ncam[CAM_MAIN_PRV].winwidth/Ncam[CAM_MAIN_PRV].winheight*PREVIEW_HEIGHT)>=PREVIEW_WIDTH then begin
+                 ImageEnViewMain.Width  :=  PREVIEW_WIDTH;
+                 ImageEnViewMain.Height :=  trunc(PREVIEW_WIDTH / (Ncam[CAM_MAIN_PRV].winwidth/Ncam[CAM_MAIN_PRV].winheight));
+              end else begin
+                 ImageEnViewMain.Width  :=  trunc(PREVIEW_HEIGHT * (Ncam[CAM_MAIN_PRV].winwidth/Ncam[CAM_MAIN_PRV].winheight));
+                 ImageEnViewMain.height :=  PREVIEW_HEIGHT;
+
+              end;
+
+               end else begin
+                 ImageEnViewMain.Width :=  Ncam[CAM_MAIN_PRV].winwidth;
+                 ImageEnViewMain.Height := Ncam[CAM_MAIN_PRV].winheight;
+               end;
+
+               // correction
+               //add text
+               memoTextNote.Width := length(myTextLines1[myTextLines1.Count-1-indexNoteShow])*9;
+               memoTextNote.Text := myTextLines1[myTextLines1.Count-1-indexNoteShow];
+
+               ImageEnViewMain.IO.DShowParams.SetVideoInput(Ncam[CAM_MAIN_PRV].winnum, 0,
+                 Ncam[CAM_MAIN_PRV].winwidth, Ncam[CAM_MAIN_PRV].winheight, Ncam[CAM_MAIN_PRV].wincamtype);
+
+               ImageEnViewMain.IO.DShowParams.EnableSampleGrabber :=true;
+
+               ImageEnViewMain.IO.DShowParams.Connect;
+               ImageEnViewMain.IO.DShowParams.Run;
+
+             end;
+        CAM_THERMO :
+        begin
+               ImageEnView2.IO.DShowParams.Stop;
+               ImageEnView2.Visible := false;
+
+               ImageEnViewMain.Layers[0].ResampleFilter :=  rfFastLinear;
+               ImageEnViewMain.Layers[0].useresamplefilter := true;
+
+
+
+               if ImageEnViewMain.LayersCount=2 then ImageEnViewMain.Layers[1].Visible := False;
+
+
+
+               if (Ncam[CAM_THERMO].winwidth/Ncam[CAM_THERMO].winheight*PREVIEW_HEIGHT)>=PREVIEW_WIDTH then begin
+                 ImageEnViewMain.Width  :=  PREVIEW_WIDTH;
+                 ImageEnViewMain.Height :=  trunc(PREVIEW_WIDTH / (Ncam[CAM_THERMO].winwidth/Ncam[CAM_THERMO].winheight));
+               end else begin
+                 ImageEnViewMain.Width  :=  trunc(PREVIEW_HEIGHT * (Ncam[CAM_THERMO].winwidth/Ncam[CAM_THERMO].winheight));
+                 ImageEnViewMain.height :=  PREVIEW_HEIGHT;
+               end;
+
+               ImageEnViewMain.IO.DShowParams.Stop;
+               ImageEnViewMain.IO.DShowParams.Disconnect;
+
+
+               ImageEnViewMain.IO.DShowParams.SetVideoInput(Ncam[CAM_THERMO].winnum,0,
+                 Ncam[CAM_THERMO].winWidth, Ncam[CAM_THERMO].winHeight, Ncam[CAM_THERMO].wincamtype );
+
+               ImageEnViewMain.IO.DShowParams.EnableSampleGrabber := true;
+
+               ImageEnViewMain.IO.DShowParams.Connect;
+               ImageEnViewMain.IO.DShowParams.Run;
+
+
+
+             end;
+        CAM_ENDO :
+        begin
+               ImageEnView2.IO.DShowParams.Stop;
+               ImageEnView2.Visible := false;
+
+               ImageEnViewMain.Layers[0].useresamplefilter := false;
+               if ImageEnViewMain.LayersCount=2 then ImageEnViewMain.Layers[1].Visible := False;
+
+
+               if (Ncam[CAM_ENDO].winwidth/Ncam[CAM_ENDO].winheight*PREVIEW_HEIGHT)>=PREVIEW_WIDTH then begin
+                 ImageEnViewMain.Width  :=  PREVIEW_WIDTH;
+                 ImageEnViewMain.Height :=  trunc(PREVIEW_WIDTH / (Ncam[CAM_ENDO].winwidth/Ncam[CAM_ENDO].winheight));
+               end else begin
+                 ImageEnViewMain.Width  :=  trunc(PREVIEW_HEIGHT * (Ncam[CAM_ENDO].winwidth/Ncam[CAM_ENDO].winheight));
+                 ImageEnViewMain.height :=  PREVIEW_HEIGHT;
+               end;
+
+
+               try
+                 ImageEnViewMain.IO.DShowParams.SetVideoInput(Ncam[CAM_ENDO].winnum, 0,
+                   Ncam[CAM_ENDO].winWidth, Ncam[CAM_ENDO].winHeight, '' );
+               except
+                 RefreshCamList;
+                 CameraSelect(CAM_MAIN_PRV);
+               end;
+
+               ImageEnViewMain.IO.DShowParams.EnableSampleGrabber := true;
+               ImageEnViewMain.IO.DShowParams.Connect;
+               ImageEnViewMain.IO.DShowParams.Run;
+
+             end;
+        CAM_TRANSPARENT :
+        begin
+
+               if ImageEnViewMain.LayersCount=1 then begin
+                 ImageEnViewMain.LayersAdd(Thermal.Width,Thermal.Height);
+                 ImageEnViewMain.Layers[1].posx := Thermal.Left;
+                 ImageEnViewMain.Layers[1].posy := Thermal.Top;
+                 ImageEnViewMain.Layers[1].Transparency := Thermal.Alpha;
+
+                 ImageEnViewMain.Layers[1].ResampleFilter :=  rfFastLinear;
+                 ImageEnViewMain.Layers[1].useresamplefilter := true;
+                 ImageEnViewMain.Layers[1].Visible := False;
+
+               end;
+
+               ImageEnView2.Visible := false;
+               ImageEnView2.Layers[0].ResampleFilter :=  rfFastLinear;
+               ImageEnView2.Layers[0].useresamplefilter := false;
+
+               ImageEnViewMain.IO.DShowParams.SetVideoInput(Ncam[CAM_MAIN_THERMO].winnum, 0,
+                 Ncam[CAM_MAIN_THERMO].winwidth, Ncam[CAM_MAIN_THERMO].winheight, Ncam[CAM_MAIN_THERMO].wincamtype);
+
+               ImageEnViewMain.Width  :=  PREVIEW_TRANSMODE_WIDTH;
+               ImageEnViewMain.height :=  PREVIEW_TRANSMODE_HEIGHT;
+
+               ImageEnViewMain.IO.DShowParams.EnableSampleGrabber := true;
+               ImageEnViewMain.IO.DShowParams.Connect;
+               ImageEnViewMain.IO.DShowParams.Run;
+
+               ImageEnView2.IO.DShowParams.SetVideoInput(Ncam[CAM_THERMO].winnum, 0,
+                 Ncam[CAM_THERMO].winWidth, Ncam[CAM_THERMO].winHeight, Ncam[CAM_THERMO].wincamtype );
+
+               ImageEnView2.IO.DShowParams.EnableSampleGrabber := true;
+               ImageEnView2.IO.DShowParams.Connect;
+               ImageEnView2.IO.DShowParams.Run;
+
+               TransparentPositionTrackBar.Visible := True;
+
+               ImageEnViewMain.Layers[1].posx := Thermal.Left+Thermal.Combine;
+               ImageEnViewMain.Layers[1].posy := Thermal.Top;
+               ImageEnViewMain.Layers[1].Width := Thermal.Width;
+               ImageEnViewMain.Layers[1].Height := Thermal.Height;
+
+               ImageEnViewMain.Layers[1].Visible := true;
+
+
+             end;
+        CAM_DOUBLE :
+        begin
+               ImageEnViewMain.Layers[0].useresamplefilter := false;
+               if ImageEnViewMain.LayersCount=2 then ImageEnViewMain.Layers[1].Visible := False;
+
+               ImageEnViewMain.IO.DShowParams.SetVideoInput(Ncam[CAM_MAIN_THERMO].winnum, 0,
+                 Ncam[CAM_MAIN_THERMO].winwidth, Ncam[CAM_MAIN_THERMO].winheight, Ncam[CAM_MAIN_THERMO].wincamtype);
+
+               ImageEnViewMain.IO.DShowParams.EnableSampleGrabber := true;
+               ImageEnViewMain.IO.DShowParams.Connect;
+               ImageEnViewMain.IO.DShowParams.Run;
+
+               ImageEnView2.IO.DShowParams.SetVideoInput(Ncam[CAM_THERMO].winnum, 0,
+                 Ncam[CAM_THERMO].winWidth, Ncam[CAM_THERMO].winHeight, Ncam[CAM_THERMO].wincamtype );
+
+               ImageEnView2.Layers[0].ResampleFilter :=  rfFastLinear;
+               ImageEnView2.Layers[0].useresamplefilter := true;
+
+               ImageEnView2.IO.DShowParams.EnableSampleGrabber := true;
+               ImageEnView2.IO.DShowParams.Connect;
+               ImageEnView2.IO.DShowParams.Run;
+               ImageEnView2.Visible := true;
+             end;
+     end;
+
+     SetupIconsVisibleAndPos;
+end;
+
+procedure TSDIAppForm.FormActivate(Sender: TObject);
+begin
+     SetupIconsVisibleAndPos;
+
+     FlashControlComPort.Connect;
+end;
+
+procedure TSDIAppForm.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+     Action := caFree;
+end;
+
+
+procedure TSDIAppForm.FormCreate(Sender: TObject);
+
+begin
+     Application.Title := 'МФУ "Напарник"';
+     WaitFirstFrame  := True;
+     ImageEnViewMain := nil;
+     ImageEnView2    := nil;
+
+     bTakePhoto := false;
+
+     camlist := TStringlist.Create;
+     MainViewCreate;
+
+     ini := TregIniFile.Create('workmate.data');
+
+
+     FlashControlComport.PortName := '\\.\'+    ini.ReadString ('Main','COMPORT','COM1');
+
+     pbFlashPower.Min := 0;
+     pbFlashPower.Max := 1199;
+     pbFlashPower.Position := ini.ReadInteger ('Main','FlashPower',600);
+     StepFlashPower := ini.ReadInteger ('Main','StepFlashPower',100);
+
+     //correction
+     pbBritness.Min := 0;
+     pbBritness.Max := 60000;
+     pbBritness.Position := 40000;
+     StepBritness := 10000;
+
+     Label1.Caption := Inttostr(pbFlashPower.Position);
+
+
+     FlashDuration :=ini.ReadInteger ('Main','FlashDuration',12);
+
+
+     Ncam[CAM_MAIN_PRV].winname    :=  ini.ReadString ('Main','MainPreviewName','');
+
+     if   Ncam[CAM_MAIN_PRV].winname='' then begin
+       curmode := APP_TERMINATE;
+       NeedSetup;
+       Application.Terminate;
+     end;
+
+     Ncam[CAM_MAIN_PRV].winwidth   :=  ini.ReadInteger('Main','MainPreviewWidth',0);
+     Ncam[CAM_MAIN_PRV].winheight  :=  ini.ReadInteger('Main','MainPreviewHeight',0);
+     Ncam[CAM_MAIN_PRV].wincamtype :=  ini.ReadString ('Main','MainPreviewCamType','');
+     Ncam[CAM_MAIN_PRV].winnum     :=  ImageEnViewMain.IO.DShowParams.VideoInputs.IndexOf(Ncam[CAM_MAIN_PRV].winname);
+     Ncam[CAM_MAIN_PRV].scale      :=  ini.ReadBool ('Main','MainPreviewAllowScaleUp',true);
+
+     Flash := ini.ReadBool ('Main','Flash',true);
+
+     Ncam[CAM_MAIN_SAVE].winname    :=  ini.ReadString ('Main','MainSaveName','');
+     Ncam[CAM_MAIN_SAVE].winwidth   :=  ini.ReadInteger('Main','MainSaveWidth',0);
+     Ncam[CAM_MAIN_SAVE].winheight  :=  ini.ReadInteger('Main','MainSaveHeight',0);
+     Ncam[CAM_MAIN_SAVE].wincamtype :=  ini.ReadString ('Main','MainSaveCamType','');
+     Ncam[CAM_MAIN_SAVE].winnum     :=  ImageEnViewMain.IO.DShowParams.VideoInputs.IndexOf(Ncam[CAM_MAIN_SAVE].winname);
+
+     Ncam[CAM_THERMO].winname    :=  ini.ReadString ('Main','ThermoSaveName','');
+     Ncam[CAM_THERMO].winwidth   :=  ini.ReadInteger('Main','ThermoWidth',0);
+     Ncam[CAM_THERMO].winheight  :=  ini.ReadInteger('Main','ThermoHeight',0);
+     Ncam[CAM_THERMO].wincamtype :=  ini.ReadString ('Main','ThermoCamType','');
+     Ncam[CAM_THERMO].winnum     :=  ImageEnViewMain.IO.DShowParams.VideoInputs.IndexOf(Ncam[CAM_THERMO].winname);
+
+     Ncam[CAM_ENDO].winname    :=  ini.ReadString ('Main','EndoSaveName','');
+     Ncam[CAM_ENDO].winwidth   :=  ini.ReadInteger('Main','EndoWidth',0);
+     Ncam[CAM_ENDO].winheight  :=  ini.ReadInteger('Main','EndoHeight',0);
+     Ncam[CAM_ENDO].wincamtype :=  ini.ReadString ('Main','EndoCamType','');
+     Ncam[CAM_ENDO].winnum     :=  ImageEnViewMain.IO.DShowParams.VideoInputs.IndexOf(Ncam[CAM_ENDO].winname);
+
+     Ncam[CAM_MAIN_THERMO].winname    :=  ini.ReadString ('Main','MainThermoName','');
+     Ncam[CAM_MAIN_THERMO].winwidth   :=  ini.ReadInteger('Main','MainThermoWidth',0);
+     Ncam[CAM_MAIN_THERMO].winheight  :=  ini.ReadInteger('Main','MainThermoHeight',0);
+     Ncam[CAM_MAIN_THERMO].wincamtype :=  ini.ReadString ('Main','MainThermoCamType','');
+     Ncam[CAM_MAIN_THERMO].winnum     :=  ImageEnViewMain.IO.DShowParams.VideoInputs.IndexOf(Ncam[CAM_MAIN_THERMO].winname);
+
+     Thermal.Left    := ini.ReadInteger('ThermalOverlay','Left',500);
+     Thermal.Top     := ini.ReadInteger('ThermalOverlay','Top',100);
+     Thermal.Width   := ini.ReadInteger('ThermalOverlay','Width',80);
+     Thermal.Height  := ini.ReadInteger('ThermalOverlay','Height',60);
+     Thermal.Alpha   := ini.ReadInteger('ThermalOverlay','Transparency',100);
+     Thermal.Combine := ini.ReadInteger('ThermalOverlay','ThermalCombine',0);
+     TransparentPositionTrackBar.Position:=   Thermal.Combine;
+
+
+//     RefreshCamList;
+
+     Timer1.Enabled := True;
+
+    if curmode<>APP_TERMINATE then CameraSelect(CAM_MAIN_PRV);
+
+
+
+
+
+end;
+
+procedure TSDIAppForm.NeedSetup;
+begin
+     UCamSelectDialog.CamSelectForm := TCamSelectForm.Create(Application);
+
+
+     CamSelectForm.cbCamMainName.Items.Assign(ImageEnViewMain.IO.DShowParams.VideoInputs);
+     CamSelectForm.cbCamThermoName.Items.Assign(ImageEnViewMain.IO.DShowParams.VideoInputs);
+     CamSelectForm.cbCamEndoName.Items.Assign(ImageEnViewMain.IO.DShowParams.VideoInputs);
+
+     CamSelectForm.left := (self.Width-CamSelectForm.Width) div 2;
+     CamSelectForm.top :=  (self.Height-CamSelectForm.Height) div 2;
+
+     UCamSelectDialog.CamSelectForm.AllComboBoxEnDis(false);
+
+     UCamSelectDialog.CamSelectForm.ShowModal;
+end;
+
+procedure TSDIAppForm.FormKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+     if curmode=CAM_TRANSPARENT then begin
+     if Shift=[] then begin
+       if (key>47) and (key<58) then Thermal.Alpha := trunc((key-47)*25.5);
+       if key=39 then Thermal.Left := Thermal.Left + 1;
+       if key=37 then Thermal.Left := Thermal.Left - 1;
+       if key=38 then Thermal.top  := Thermal.top  - 1;
+       if key=40 then Thermal.top  := Thermal.top  + 1;
+     end;
+
+     if Shift=[ssShift] then begin
+       if key=39 then Thermal.Width  := Thermal.Width  + 1;
+       if key=37 then Thermal.Width  := Thermal.Width  - 1;
+       if key=38 then Thermal.Height := Thermal.Height - 1;
+       if key=40 then Thermal.Height := Thermal.Height + 1;
+     end;
+
+     ImageEnViewMain.Layers[1].posx   := Thermal.Left+Thermal.Combine;
+     ImageEnViewMain.Layers[1].posy   := Thermal.Top;
+     ImageEnViewMain.Layers[1].Width  := Thermal.Width;
+     ImageEnViewMain.Layers[1].Height := Thermal.Height;
+     ImageEnViewMain.Layers[1].Transparency := Thermal.Alpha;
+
+     ImageEnViewMain.Layers[1].Bitmap.iecanvas.TextOut(1,1,Floattostr(Thermal.Width/Thermal.Height));
+
+     ini.WriteInteger('ThermalOverlay','Left',Thermal.Left);
+     ini.WriteInteger('ThermalOverlay','Top',Thermal.Top);
+     ini.WriteInteger('ThermalOverlay','Width',Thermal.Width);
+     ini.WriteInteger('ThermalOverlay','Height',Thermal.Height);
+     ini.WriteInteger('ThermalOverlay','Transparency',Thermal.Alpha);
+     end;
+
+
+     // Easter Egg
+     if curmode=CAM_TRANSPARENT then begin
+        if (key=112) then begin
+          COMPort.Visible := True;
+          bZeroVector.Visible := True;
+          COMPortСonnect.Visible := True;
+        end;
+        if (key=113) then begin
+          COMPort.Visible := False;
+          bZeroVector.Visible := False;
+          COMPortСonnect.Visible := False;
+        end;
+     end;
+
+
+end;
+
+procedure TSDIAppForm.SetupIconsVisibleAndPos;
+begin
+     Width := 1024;
+     Height := 600;
+     Left := 0;
+     Top := 0;
+
+     if curmode=CAM_TRANSPARENT then begin
+       TransparentPositionTrackBar.Width := 800;
+       TransparentPositionTrackBar.left  := 100;
+       TransparentPositionTrackBar.Top   := 550;
+
+     end;
+
+     if curmode=CAM_DOUBLE then begin
+
+       ImageEnViewMain.Width   := (1024-150) div 2;
+       ImageEnViewMain.Height  := Trunc(ImageEnViewMain.Width/1.333);
+       ImageEnViewMain.Left    := 75 ;
+       ImageEnViewMain.Top     := (Height -  ImageEnViewMain.Height) div 2;
+
+       ImageEnView2.Width   := ImageEnViewMain.Width;
+       ImageEnView2.Height  := ImageEnViewMain.Height;
+       ImageEnView2.Left    := self.Width div 2;
+       ImageEnView2.Top     := (Height -  ImageEnView2.Height) div 2;
+       ImageEnView2.Visible := True;
+     end else begin
+       ImageEnViewMain.Left := (Width - ImageEnViewMain.Width) div 2;
+       ImageEnViewMain.Top := (Height -  ImageEnViewMain.Height) div 2;
+       ImageEnView2.Visible := false;
+     end;
+
+     imPhotoEn     := 0;
+     imThermalEn   := 0;
+     imEndoEn      := 0;
+
+
+     if (Ncam[CAM_MAIN_PRV].winname<>'') then begin
+       imPhotoEn     := 1;
+     end;
+     if (Ncam[CAM_THERMO].winname<>'') then begin
+       imThermalEn := 1;
+     end;
+     if (Ncam[CAM_ENDO].winname<>'') then begin
+       imEndoEn      := 1;
+       if Pos(Ncam[CAM_ENDO].winname,camlist.text)=0 then begin
+         imEndoEn := 0;
+         imEndo.Visible := False;
+       end;
+     end;
+
+     if Ncam[CAM_ENDO].winname='' then   begin
+       imEndoEn      := 0;
+       imEndo.Visible := False;
+     end;
+
+     if curmode<>0 then begin
+       if (imPhotoEn=1) then imPhoto.Visible := true;
+     end else imPhoto.Visible := False;
+
+     if curmode<>1 then begin
+       if (imThermalEn=1) then begin
+         imThermal.Visible := true;
+         imPhotoTherm.Visible := true;
+         imDouble.Visible := true;
+       end;
+     end else begin
+       imThermal.Visible := False;
+       imPhotoTherm.Visible := false;
+       imDouble.Visible := false;
+     end;
+
+     if curmode<>2 then begin
+       if (imEndoEn=1) then imEndo.Visible := true;
+     end else imEndo.Visible := False;
+
+     if curmode<>3 then begin
+       imPhotoTherm.Visible := true;
+     end else imPhotoTherm.Visible := False;
+
+     if curmode<>4 then begin
+       imDouble.Visible := true;
+     end else imDouble.Visible := False;
+
+     // photo
+     imTakePhoto.Visible := true;
+
+     // close
+     imClose.Visible := True;
+
+     if Flash then begin
+       imFlash.Visible := True;
+       imNoFlash.Visible := False;
+     end else begin
+       imFlash.Visible := False;
+       imNoFlash.Visible := True;
+     end;
+
+     if (curmode<>CAM_MAIN_PRV) then begin
+       imFlash.Visible := False;
+       imNoFlash.Visible := False;
+     end;
+
+     if (curmode=CAM_MAIN_PRV) then begin
+       imFlashPlus.Visible := imFlash.Visible;
+       imFlashMinus.Visible := imFlash.Visible;
+       pbFlashPower.Visible := imFlash.Visible;
+     end else begin
+       imFlashPlus.Visible := False;
+       imFlashMinus.Visible := False;
+       pbFlashPower.Visible := False;
+
+     end;
+
+
+     // correction
+     //====================================================
+
+     if ((curmode<>CAM_ENDO) And (bFindCom)) then begin
+          ImageDot1.Visible := True;
+     end else begin
+          ImageDot1.Visible := False;
+     end;
+
+
+     if ( (curmode=CAM_ENDO) And (bFindCom)) then begin
+
+          //ImageDot1.Visible := True;
+          TimerEndo.Enabled := True;
+
+          iVertical.Visible := True;
+          iHorizont.Visible := True;
+          imPlusBritness.Visible := True;
+          imMinusBritness.Visible := True;
+          pbBritness.Visible := True;
+          if Horizont then   begin
+             iHorizontBorder.Visible := True;
+          end else begin
+            iVerticalBorder.Visible := True;
+          end;
+
+          ImageOrientation.Visible := True;
+
+         imPlusBritness.Left := 951;
+         imPlusBritness.Top := 103;
+         imMinusBritness.Left := 951;
+         imMinusBritness.Top := 173;
+         pbBritness.Left := 935;
+         pbBritness.Top := 150;
+
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // поиск подходящего com порта
+
+        //CommPortDriver1.PortName := '\\.\COM'+COMPort.Text;
+        //CommPortDriver1.PortName :=  '\\.\COM4';
+        CommPortDriver1.PortName := '\\.\'+SerialCommNum[Com];
+
+        CommPortDriver1.Connect;
+
+       // Memo1.Visible := True;
+       // Memo1.BringToFront;
+
+        // один раз вычитываем с акселерометра значения калибровки
+        if bOne=False then begin
+          if (CommPortDriver1.Connected) then begin
+            bOne := True;
+            memo1.Lines.Add( 'Подключились к '+CommPortDriver1.PortName);
+            CommPortDriver1.SendString('GAAZ');
+            bCalibration := True;
+
+          end else begin
+            memo1.Lines.Add('Не смогли подключиться к COM '+CommPortDriver1.PortName);
+          end;
+
+        end;
+
+     end else begin
+
+       //ImageDot1.Visible := False;
+       TimerEndo.Enabled := False;
+       imPlusBritness.Visible := False;
+       imMinusBritness.Visible := False;
+       pbBritness.Visible := False;
+       iVertical.Visible := False;
+       iHorizont.Visible := False;
+       iVerticalBorder.Visible := False;
+       iHorizontBorder.Visible := False;
+       ImageOrientation.Visible := False;
+
+       CommPortDriver1.Disconnect;
+     end;
+
+
+     {if curmode=CAM_DOUBLE then begin
+         imNote.Visible := False;
+         memoTextNote.Visible := False;
+     end else begin
+         imNote.Visible := True;
+         memoTextNote.Visible := True;
+     end;}
+
+//======================================================
+
+
+     imPhoto.Left :=   10;
+     imPhoto.Top :=    10;
+
+     imThermal.Left :=   10;
+     imThermal.Top :=    10+48+10;
+
+     imEndo.Left :=   10;
+     imEndo.Top :=    10+48+10+48+10;
+
+     ImageDot1.Left :=   58;
+     ImageDot1.Top :=    10+48+10+48+10 + 10;
+
+     imPhotoTherm.Left :=   10;
+     imPhotoTherm.Top :=    10+48+10+48+10+48+10;
+
+     imDouble.Left :=   10;
+     imDouble.Top :=    10+48+10+48+10+48+10+48+10;
+
+     {GroupBox2.Height := 30;
+     GroupBox2.Width := 550;
+     GroupBox2.Left := 180;
+     GroupBox2.Top :=500;
+
+     iTextNote.Height := 30;
+     iTextNote.Width := 549;
+     iTextNote.Left := 179;
+     iTextNote.Top := 499; }
+
+     // take photo
+     imTakePhoto.Left :=   Width -75;
+     imTakePhoto.Top :=   (Height  - 48 ) div 2 - 48 div 2 + 100;
+
+     // close
+     imClose.Left :=     Width - 75 ;
+     imClose.Top  :=  10;
+
+     //          вспышка вкл
+     imFlash.Left := Width - 75  ;
+     imFlash.Top  :=  100+100+20;
+     //          вспышка выкл
+     imNoFlash.Left := Width - 75  ;
+     imNoFlash.Top  :=  100+100+20;
+
+
+
+end;
+
+procedure TSDIAppForm.imTakePhotoClick(Sender: TObject);
+       TakePhoto();
+end;
+
+
+
+procedure TSDIAppForm.imThumbnailClick(Sender: TObject);
+var
+  path : String;
+  path1 : PAnsiChar;
+begin
+  path :=  'EXPLORER /e, ' + '"' + GetPathDocuments + '"';
+
+  path1 := pAnsiChar(AnsiString(path));
+  //WinExec('EXPLORER /e, "C:\Users\Andrei\Pictures\Напарник\"', SW_SHOW);
+  WinExec(path1, SW_SHOW);
+   Application.Minimize;
+end;
+
+procedure TSDIAppForm.SavePhoto;
+var
+path,path1 : String;
+buffer : TIEBitmap;
+     cf : single;
+procedure ThumbnailShow;
+begin
+     imThumbnail.Picture.LoadFromFile(path1);
+     cf :=1+trunc (imThumbnail.Picture.width / THUMBNAILMAXWIDTH);
+     imThumbnail.width := trunc(imThumbnail.Picture.width / cf);
+     imThumbnail.height := trunc(imThumbnail.Picture.height/ cf);
+     imThumbnail.top := 600 - imThumbnail.height -10;
+     imThumbnail.left := 10;
+     imThumbnail.visible := True;
+
+end;
+
+begin
+     path := GetPathDocuments;
+     if not directoryexists( path ) then begin
+       createdir( path );
+     end;
+
+     path1 := path + 'NP'+formatdatetime('yyyy-mm-dd-hh-mm-ss', now)+'.jpg';
+
+     case curmode of
+       CAM_MAIN_PRV : begin
+             ImageEnViewMain.LayersCurrent := 0;
+
+             // add text
+             ImageEnViewMain.IO.IEBitmap.Canvas.Font.Size := 60;
+             ImageEnViewMain.IO.IEBitmap.Canvas.TextOut(40, 2200, myTextLines1[myTextLines1.Count-1-indexNoteShow]);
+             ImageEnViewMain.Update();
+
+             ImageEnViewMain.IO.SaveToFile(path1,ioJPEG);
+
+             ThumbnailShow;
+             CameraSelect(CAM_MAIN_PRV);
+       end;
+       CAM_ENDO : begin
+             ImageEnViewMain.LayersCurrent := 0;
+
+             // add text
+             ImageEnViewMain.IO.IEBitmap.Canvas.Font.Size := 30;
+             ImageEnViewMain.IO.IEBitmap.Canvas.TextOut(40, 1100, myTextLines1[myTextLines1.Count-1-indexNoteShow]);
+             ImageEnViewMain.Update();
+
+             ImageEnViewMain.IO.SaveToFile(path1,ioJPEG);
+
+             ThumbnailShow;
+       end;
+       CAM_THERMO : begin
+             ImageEnViewMain.LayersCurrent := 0;
+             ImageEnViewMain.IO.IEBitmap.Resample(320,240, rfWICFant );
+
+             // add text
+             ImageEnViewMain.IO.IEBitmap.Canvas.Font.Size := 10;
+             ImageEnViewMain.IO.IEBitmap.Canvas.TextOut(30, 210, myTextLines1[myTextLines1.Count-1-indexNoteShow]);
+             ImageEnViewMain.Update();
+
+             ImageEnViewMain.IO.SaveToFile(path1,ioJPEG);
+
+             ThumbnailShow;
+           end;
+       CAM_TRANSPARENT : begin
+             ImageEnViewMain.LayersMergeTo(0, 1, ImageEnView2.IEBitmap);
+
+             // add text
+             ImageEnView2.IO.IEBitmap.Canvas.Font.Size := 10;
+             ImageEnView2.IO.IEBitmap.Canvas.TextOut(30, 460, myTextLines1[myTextLines1.Count-1-indexNoteShow]);
+             ImageEnView2.Update();
+
+             ImageEnView2.IO.SaveToFile(path1,ioJPEG);
+             imThumbnail.Picture.LoadFromFile(path1);
+
+             ThumbnailShow;
+           end;
+       CAM_DOUBLE : begin
+             buffer := TIEBitmap.Create(2*ImageEnViewMain.Layers[0].Width,
+             ImageEnViewMain.Layers[0].Height);
+
+             ImageEnViewMain.Layers[0].Bitmap.rendertocanvas(
+                buffer.canvas,0,0,ImageEnViewMain.Layers[0].Width,
+                ImageEnViewMain.Layers[0].Height,rfNone,1);
+
+             ImageEnView2.Layers[0].Bitmap.rendertocanvas(
+                buffer.canvas,ImageEnViewMain.Layers[0].Width,0,ImageEnViewMain.Layers[0].Width,
+                ImageEnViewMain.Layers[0].Height,rfFastLinear,1);
+
+            // add text
+             buffer.Canvas.Font.Size := 10;
+             buffer.Canvas.TextOut(10, 450, myTextLines1[myTextLines1.Count-1-indexNoteShow]);
+
+             buffer.Write(path1);
+             buffer.Free;
+
+             ThumbnailShow;
+           end;
+     end;
+
+     Timer1.Enabled := true;
+     CameraSelect(curmode);
+end;
+
+procedure TSDIAppForm.imCloseButtonClick(Sender: TObject);
+begin
+     Close;
+end;
+
+procedure TSDIAppForm.CameraSelectClick(Sender: TObject);
+begin
+     CameraSelect(TImage(Sender).tag);
+end;
+
+
+procedure TSDIAppForm.FlashSendCMD;
+var
+   FlashToPort : Word;
+   FlashBytes : Array [0..1] of byte absolute FlashToPort;
+begin
+
+     Flash := True;
+     ini.WriteBool ('Main','Flash',Flash);
+     SetupIconsVisibleAndPos;
+
+     FlashToPort := 1199-pbFlashPower.Position;
+
+     if FlashToPort>1199 then FlashToPort:=1199;
+
+
+     Label1.Caption := Inttostr(pbFlashPower.Position);
+
+
+
+     memo1.Lines.Add(inttohex($55,2)+' '+inttohex($53,2)+' '+inttohex(FlashBytes[1],2)+' '+inttohex(FlashBytes[0],2)+' '+inttohex(FlashDuration,2));
+
+
+     try
+       if FlashControlComPort.Connect then begin
+         memo1.Lines.Add('connect');
+         memo1.Lines.Add('send start -');
+         FlashControlComPort.SendByte($55);
+         FlashControlComPort.SendByte($53);
+         FlashControlComPort.SendByte(FlashBytes[1]);
+         FlashControlComPort.SendByte(FlashBytes[0]);
+         FlashControlComPort.SendByte(FlashDuration);
+       end else begin
+         memo1.Lines.Add(FlashControlComPort.PortName+'cannot conn.');
+       end;
+     except
+       memo1.Lines.Add('except sending');
+     //  FlashControlComPort.Disconnect;
+     end;
+
+
+
+end;
+
+procedure TSDIAppForm.imFlashMinusClick(Sender: TObject);
+begin
+     pbFlashPower.Position := pbFlashPower.Position - StepFlashPower;
+     memo1.Lines.Add('minus press');
+
+
+     FlashSendCMD;
+
+end;
+
+procedure TSDIAppForm.imFlashOnOffClick(Sender: TObject);
+begin
+     Flash := not Flash;
+     ini.WriteBool ('Main','Flash',Flash);
+     SetupIconsVisibleAndPos;
+end;
+
+procedure TSDIAppForm.imFlashPlusClick(Sender: TObject);
+begin
+     pbFlashPower.Position := pbFlashPower.Position + StepFlashPower;
+     memo1.Lines.Add('plus press');
+
+     FlashSendCMD;
+
+
+end;
+
+procedure TSDIAppForm.imMinusBritnessClick(Sender: TObject);
+begin
+    pbBritness.Position := pbBritness.Position - StepBritness;
+    BritnessSendCMD;
+end;
+
+procedure TSDIAppForm.ImageEnViewMainDShowNewFrame(Sender: TObject);
+begin
+     if WaitFirstFrame then begin
+       ImageEnViewMain.visible :=true;
+       SetupIconsVisibleAndPos;
+     end;
+
+     WaitFirstFrame:=false;
+
+     ImageEnViewMain.IO.DShowParams.GetSample(ImageEnViewMain.Layers[0].Bitmap);
+
+     if bTakePhoto then begin
+       bTakePhoto := false;
+       SavePhoto;
+     end else begin
+       ImageEnViewMain.Update;
+     end;
+end;
+
+
+procedure TSDIAppForm.ImageEnView2DShowNewFrame(Sender: TObject);
+begin
+     if curmode=CAM_TRANSPARENT then begin
+       ImageEnView2.IO.DShowParams.GetSample(ImageEnViewMain.Layers[1].Bitmap);
+       ImageEnViewMain.Update;
+     end;
+
+     if curmode=CAM_DOUBLE then begin
+       ImageEnView2.IO.DShowParams.GetSample(ImageEnView2.Layers[0].Bitmap);
+       ImageEnView2.Update;
+     end;
+end;
+
+
+procedure TSDIAppForm.FlashDelayTimerTimer(Sender: TObject);
+begin
+     FlashDelayProgressBar.Position  := FlashDelayProgressBar.Position + 1;
+     if (FlashDelayProgressBar.Position=FlashDelayProgressBar.Max) then begin
+       FlashDelayProgressBar.Visible := False;
+       FlashDelayTimer.Enabled       := False;
+       SavePhoto;
+     end;
+end;
+
+procedure TSDIAppForm.RefreshCamList;
+var    pp :  TIEDirectShow;
+   oldcamlist : String;
+begin
+     oldcamlist := camlist.Text;
+     pp := TIEDirectShow.Create;
+     camlist.Assign(pp.VideoInputs);
+     pp.Free;
+
+     if oldcamlist <> camlist.Text then begin
+       MainViewCreate;
+       CameraSelect(CAM_MAIN_PRV);
+       Ncam[CAM_MAIN_SAVE].winnum     :=  ImageEnViewMain.IO.DShowParams.VideoInputs.IndexOf(Ncam[CAM_MAIN_SAVE].winname);
+       Ncam[CAM_THERMO].winnum        :=  ImageEnViewMain.IO.DShowParams.VideoInputs.IndexOf(Ncam[CAM_THERMO].winname);
+       Ncam[CAM_ENDO].winnum          :=  ImageEnViewMain.IO.DShowParams.VideoInputs.IndexOf(Ncam[CAM_ENDO].winname);
+       Ncam[CAM_MAIN_THERMO].winnum   :=  ImageEnViewMain.IO.DShowParams.VideoInputs.IndexOf(Ncam[CAM_MAIN_THERMO].winname);
+     end;
+end;
+
+
+procedure TSDIAppForm.Timer1Timer(Sender: TObject);
+var oldimEndoEn : Integer;
+begin
+     oldimEndoEn := imEndoEn;
+
+     RefreshCamList;
+
+     if Pos(Ncam[CAM_ENDO].winname,camlist.text)=0
+       then imEndoEn := 0
+       else imEndoEn := 1;
+
+     if oldimEndoEn <> imEndoEn then SetupIconsVisibleAndPos;
+end;
+
+
+procedure TSDIAppForm.TransparentPositionTrackBarChange(Sender: TObject);
+begin
+     if (ImageEnViewMain.LayersCount=2) then  ImageEnViewMain.Layers[1].posx := Thermal.Left+Thermal.Combine;
+     Thermal.Combine := TransparentPositionTrackBar.Position;
+     ini.WriteInteger('ThermalOverlay','ThermalCombine',Thermal.Combine);
+end;
+
+end.

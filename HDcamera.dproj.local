@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>1899.12.30 00:00:00.000.152,C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\SDI.dproj=C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\camera.dproj</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.160,C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\Unit1.pas=C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\UDrawPanel.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.788,C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\ABOUT.PAS=</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.219,C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\цуа.dproj=C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\SDI.dproj</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.440,C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\Unit1.dfm=C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\UCameraParameters.dfm</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.920,C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\camera.dproj=C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\HDcamera.dproj</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.595,C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\SDIAPP.dproj=C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\цуа.dproj</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.553,=C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.440,C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\Unit1.pas=C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\UCameraParameters.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.648,=C:\Users\SuperHero\Documents\Embarcadero\Studio\Projects\CameraFL\Unit1.pas</Transaction>
+  </Transactions>
+</BorlandProject>
